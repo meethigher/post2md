@@ -6,52 +6,104 @@ import java.util.regex.Pattern;
 
 public class Post2MD {
 
-    private static String template = "![](https://meethigher.top/blog/%s/%s/%s)";
-    private static String target = System.getProperty("user.dir").replace("\\", "/") + "/%s";
-    private static boolean write = false;
-    private static String year;
+    /**
+     * 匹配字符串 "asset_img" 后面跟着一个或多个空格，然后是一个或多个非空格字符，最后是一个或多个空格字符。
+     */
+    private static Pattern imgPattern = Pattern.compile("asset_img\\s+(\\S+)\\s+");
+    /**
+     * 匹配4个数值
+     */
+    private static Pattern datePattern = Pattern.compile("\\d{4}");
+
+    private final String imageUrlTemplate;
+    private final String blogUrlTemplate;
+
+    public Post2MD(String imageUrlTemplate, String blogUrlTemplate) {
+        this.imageUrlTemplate = imageUrlTemplate;
+        this.blogUrlTemplate = blogUrlTemplate;
+    }
+
+    public Post2MD() {
+        this.imageUrlTemplate = "![](https://meethigher.top/blog/{createYear}/{mdName}/{imageName})";
+        this.blogUrlTemplate = "https://meethigher.top/blog/{createYear}/{mdName}/";
+    }
 
     /**
-     * {% asset_img a.png %}
-     * <p>
-     * {% asset_img b.png 你好 %}
+     * 将源文件转换成以title命名的.md文件
+     *
+     * @param sourceFilePath 原文件地址
      */
-    //匹配字符串 "asset_img" 后面跟着一个或多个空格，然后是一个或多个非空格字符，最后是一个或多个空格字符。然后提取其中的非空格字符
-    private static Pattern imgPattern = Pattern.compile("asset_img\\s+(\\S+)\\s+");
-    private static Pattern datePattern = Pattern.compile("\\d{4}");
-    private static String fileName;
-
-    public static void convert(String source) throws Exception {
-        File file = new File(source);
+    public void assetImg2UrlImg(String sourceFilePath) throws Exception {
+        File file = new File(sourceFilePath);
         String originFileName = file.getName();
-        fileName = originFileName.replace(".md", "");
-        try (BufferedReader reader = new BufferedReader(new FileReader(file));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(String.format(target, originFileName)))) {
+        String mdName = originFileName.replace(".md", "");
+        String createYear = "", blogTitle = "", createTime = "";
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            BufferedWriter writer = null;
             String line;
+            //true表示当前文件读取游标已经处于正文中了
+            boolean reachedContent = false;
             while ((line = reader.readLine()) != null) {
-                if (write) {
+                /**
+                 * 如果到了正文中，就需要进行判定操作，否则原封不动的继续输出就可以了
+                 * 如果未到正文中，就进行基础信息的截取
+                 */
+                if (reachedContent) {
                     if (line.contains("asset_img")) {
                         Matcher matcher = imgPattern.matcher(line);
                         while (matcher.find()) {
                             String imageName = matcher.group(1);
-                            writer.write(String.format(template, year, fileName, imageName));
+                            String imageUrl = imageUrlTemplate.replace("{createYear}", createYear)
+                                    .replace("{mdName}", mdName)
+                                    .replace("{imageName}", imageName);
+                            writer.write(imageUrl);
                             writer.newLine();
                         }
                     } else {
                         writer.write(line, 0, line.length());
                         writer.newLine();
                     }
-                }
-                if (line.equals("<!--more-->")) {
-                    write = true;
-                } else if (line.contains("date: ")) {
-                    Matcher matcher = datePattern.matcher(line);
-                    if (matcher.find()) {
-                        year = matcher.group();
+                } else {
+                    /**
+                     * 判定正文前内容，如标题、创建时间等等
+                     */
+                    if ("<!--more-->".equals(line)) {
+                        reachedContent = true;
+                        // 添加一行说明
+                        String template = "注意： 本文内容于 {createTime} 创建，可能不会在此平台上进行更新。如果您希望查看最新版本或更多相关内容，请访问原文地址：[{blogTitle}]({blogUrl})。感谢您的关注与支持！";
+                        String description = template.replace("{createTime}", createTime)
+                                .replace("{blogTitle}", blogTitle)
+                                .replace("{blogUrl}", blogUrlTemplate.replace("{createYear}", createYear).replace("{mdName}", mdName));
+                        writer.write(description);
+                        writer.newLine();
+                    } else if (line.contains("date: ")) {
+                        // 截取创建时间
+                        createYear = extractYear(line);
+                        createTime = line.replace("date: ", "");
+                    } else if (line.contains("title: ")) {
+                        // 截取博客标题
+                        blogTitle = line.replace("title: ", "");
+                        writer = new BufferedWriter(new FileWriter(String.format(System.getProperty("user.dir").replace("\\", "/") + "/%s.md", blogTitle)));
                     }
                 }
             }
+            if (writer != null) {
+                writer.close();
+            }
         }
+
     }
 
+
+    private String extractYear(String input) {
+        // 定义正则表达式，匹配四位数字年份
+        String regex = "\\b(\\d{4})\\b";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+        if (matcher.find()) {
+            // 返回匹配到的年份
+            return matcher.group(1);
+        }
+        return null;
+    }
 }

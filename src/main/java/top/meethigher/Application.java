@@ -42,6 +42,6 @@ public class Application {
             jCommander.usage();
             return;
         }
-        Post2MD.convert(app.getSource());
+        new Post2MD().assetImg2UrlImg(app.getSource());
     }
 }
