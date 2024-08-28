@@ -10,8 +10,11 @@ import top.meethigher.post2md.Post2MD;
  */
 public class Application {
 
-    @Parameter(names = "-s", description = "源文件")
+    @Parameter(names = "-s", required = true, description = "源文件")
     private String source;
+
+    @Parameter(names = "--c", required = false, description = "开启md语法图片转为hexo语法")
+    private boolean convert;
 
     @Parameter(names = "--help", help = true)
     private boolean help;
@@ -32,6 +35,14 @@ public class Application {
         this.help = help;
     }
 
+    public boolean isConvert() {
+        return convert;
+    }
+
+    public void setConvert(boolean convert) {
+        this.convert = convert;
+    }
+
     public static void main(String... args) throws Exception {
         Application app = new Application();
         JCommander jCommander = JCommander.newBuilder()
@@ -42,6 +53,12 @@ public class Application {
             jCommander.usage();
             return;
         }
-        new Post2MD().assetImg2UrlImg(app.getSource());
+        Post2MD post2MD = new Post2MD();
+        if (app.isConvert()) {
+            post2MD.mdImgLink2HexoImgLink(app.getSource());
+        } else {
+            post2MD.assetImg2UrlImg(app.getSource());
+        }
+
     }
 }

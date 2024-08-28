@@ -28,6 +28,29 @@ public class Post2MD {
         this.blogUrlTemplate = "https://meethigher.top/blog/{createYear}/{mdName}/";
     }
 
+    public void mdImgLink2HexoImgLink(String sourceFilePath) throws Exception {
+        File file = new File(sourceFilePath);
+        String originFileName = file.getName();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file)); BufferedWriter writer = new BufferedWriter(new FileWriter(originFileName))) {
+            String line;
+            //true表示当前文件读取游标已经处于正文中了
+            boolean reachedContent = false;
+            while ((line = reader.readLine()) != null) {
+                String tLine = line;
+                if (isMatchingMdImgLink(line)) {
+                    String s = extractImg(tLine);
+                    if (s != null) {
+                        tLine = "{% asset_img " + s + " %}";
+                    }
+                }
+                writer.write(tLine);
+                writer.newLine();
+                writer.flush();
+            }
+        }
+
+    }
+
     /**
      * 将源文件转换成以title命名的.md文件
      *
@@ -105,5 +128,29 @@ public class Post2MD {
             return matcher.group(1);
         }
         return null;
+    }
+
+    private String extractImg(String input) {
+        String regex = getExtractImgRegex();
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        // 如果匹配成功，提取内容
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null; // 如果没有匹配到，返回null
+    }
+
+    private static String getExtractImgRegex() {
+        // 定义正则表达式，匹配()内最后一个/后的内容
+        return "!\\[.*?\\]\\(.*/([^/]+)\\)";
+    }
+
+    private boolean isMatchingMdImgLink(String input) {
+        String regex = getExtractImgRegex();
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+        return matcher.matches();
     }
 }
