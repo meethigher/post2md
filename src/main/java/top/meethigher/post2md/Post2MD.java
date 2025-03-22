@@ -36,20 +36,12 @@ public class Post2MD {
         String originFileName = file.getName();
         try (BufferedReader reader = new BufferedReader(new FileReader(file)); BufferedWriter writer = new BufferedWriter(new FileWriter(originFileName))) {
             String line;
-            //true表示当前文件读取游标已经处于正文中了
-            boolean reachedContent = false;
             while ((line = reader.readLine()) != null) {
-                if ("<!--more-->".equals(line)) {
-                    reachedContent = true;
-                    continue;
-                }
                 String tLine = line;
-                if (reachedContent) {
-                    tLine = pangu.spacingText(tLine);
-                    writer.write(tLine);
-                    writer.newLine();
-                    writer.flush();
-                }
+                tLine = pangu.spacingText(tLine);
+                writer.write(tLine);
+                writer.newLine();
+                writer.flush();
             }
         }
     }
