@@ -1,5 +1,7 @@
 package top.meethigher.post2md;
 
+import ws.vinta.pangu.Pangu;
+
 import java.io.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,6 +19,7 @@ public class Post2MD {
 
     private final String imageUrlTemplate;
     private final String blogUrlTemplate;
+    private final Pangu pangu = new Pangu();
 
     public Post2MD(String imageUrlTemplate, String blogUrlTemplate) {
         this.imageUrlTemplate = imageUrlTemplate;
@@ -26,6 +29,29 @@ public class Post2MD {
     public Post2MD() {
         this.imageUrlTemplate = "![](https://meethigher.top/blog/{createYear}/{mdName}/{imageName})";
         this.blogUrlTemplate = "https://meethigher.top/blog/{createYear}/{mdName}/";
+    }
+
+    public void prettify(String sourceFilePath) throws Exception {
+        File file = new File(sourceFilePath);
+        String originFileName = file.getName();
+        try (BufferedReader reader = new BufferedReader(new FileReader(file)); BufferedWriter writer = new BufferedWriter(new FileWriter(originFileName))) {
+            String line;
+            //true表示当前文件读取游标已经处于正文中了
+            boolean reachedContent = false;
+            while ((line = reader.readLine()) != null) {
+                if ("<!--more-->".equals(line)) {
+                    reachedContent = true;
+                    continue;
+                }
+                String tLine = line;
+                if (reachedContent) {
+                    tLine = pangu.spacingText(tLine);
+                    writer.write(tLine);
+                    writer.newLine();
+                    writer.flush();
+                }
+            }
+        }
     }
 
     public void mdImgLink2HexoImgLink(String sourceFilePath) throws Exception {

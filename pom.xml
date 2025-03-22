@@ -52,6 +52,12 @@
             <artifactId>jcommander</artifactId>
             <version>1.81</version>
         </dependency>
+        <!-- https://github.com/vinta/pangu.java -->
+        <dependency>
+            <groupId>ws.vinta</groupId>
+            <artifactId>pangu</artifactId>
+            <version>1.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

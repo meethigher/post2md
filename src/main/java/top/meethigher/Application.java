@@ -13,8 +13,18 @@ public class Application {
     @Parameter(names = "-s", required = true, description = "源文件")
     private String source;
 
-    @Parameter(names = "--c", required = false, description = "开启md语法图片转为hexo语法")
+    /**
+     * true时，将正常的markdown图片格式，转为hexo的asset_img格式
+     * false时，将hexo的asset_img格式，转为正常的markdown图片格式
+     */
+    @Parameter(names = "--c", required = false, description = "将markdown图片链接，转为hexo的asset_img链接")
     private boolean convert;
+
+    /**
+     * 文章美化，主要检测中英文排版，添加空格
+     */
+    @Parameter(names = "--p", required = false, description = "将文章进行美化")
+    private boolean prettify;
 
     @Parameter(names = "--help", help = true)
     private boolean help;
@@ -29,6 +39,14 @@ public class Application {
 
     public boolean isHelp() {
         return help;
+    }
+
+    public boolean isPrettify() {
+        return prettify;
+    }
+
+    public void setPrettify(boolean prettify) {
+        this.prettify = prettify;
     }
 
     public void setHelp(boolean help) {
@@ -54,11 +72,16 @@ public class Application {
             return;
         }
         Post2MD post2MD = new Post2MD();
+        if (app.isPrettify()) {
+            post2MD.prettify(app.getSource());
+            return;
+        }
         if (app.isConvert()) {
             post2MD.mdImgLink2HexoImgLink(app.getSource());
         } else {
             post2MD.assetImg2UrlImg(app.getSource());
         }
+
 
     }
 }
